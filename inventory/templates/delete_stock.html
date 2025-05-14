@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+
+{% block title %} Delete Stock {% endblock title %}
+
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-lg rounded-3 animate__animated animate__fadeIn">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4 text-danger animate__animated animate__heartBeat animate__delay-1s">
+                        <i class="fas fa-exclamation-triangle fa-5x"></i>
+                    </div>
+                    
+                    <h2 class="h3 fw-bold mb-4 text-danger">Delete Confirmation</h2>
+                    <p class="mb-4 fs-5">Are you sure you want to delete the stock item <strong>"{{ object.name }}"</strong>?</p>
+                    <p class="text-muted mb-4">This action cannot be undone.</p>
+                    
+                    <form method="post" id="deleteForm">
+                        {% csrf_token %}
+                        
+                        <div class="d-flex justify-content-center gap-3 mt-4">
+                            <a href="{% url 'inventory' %}" class="btn btn-lg btn-outline-secondary px-4 btn-cancel">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            <button type="submit" class="btn btn-lg btn-danger px-4 btn-delete">
+                                <span class="btn-text"><i class="fas fa-trash-alt me-2"></i>Yes, Delete</span>
+                                <span class="spinner-border spinner-border-sm ms-1 d-none" role="status" aria-hidden="true"></span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add hover effects to buttons
+    const cancelBtn = document.querySelector('.btn-cancel');
+    cancelBtn.addEventListener('mouseenter', function() {
+        this.classList.add('animate__animated', 'animate__pulse');
+    });
+    cancelBtn.addEventListener('mouseleave', function() {
+        this.classList.remove('animate__animated', 'animate__pulse');
+    });
+    
+    const deleteBtn = document.querySelector('.btn-delete');
+    deleteBtn.addEventListener('mouseenter', function() {
+        this.classList.add('animate__animated', 'animate__headShake');
+    });
+    deleteBtn.addEventListener('mouseleave', function() {
+        this.classList.remove('animate__animated', 'animate__headShake');
+    });
+    
+    // Add loading state to delete button when clicked
+    const deleteForm = document.getElementById('deleteForm');
+    deleteForm.addEventListener('submit', function(e) {
+        const btnText = document.querySelector('.btn-text');
+        const spinner = document.querySelector('.spinner-border');
+        
+        spinner.classList.remove('d-none');
+        deleteBtn.disabled = true;
+        deleteBtn.classList.remove('animate__animated', 'animate__headShake');
+        setTimeout(() => {
+            deleteBtn.classList.add('btn-danger');
+        }, 300);
+    });
+});
+</script>
+{% endblock content %}

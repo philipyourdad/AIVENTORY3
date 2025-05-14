@@ -1,0 +1,259 @@
+.sidebar-text,
+.sidebar-text:hover,
+.sidebar-text:focus {
+  color: inherit;
+  text-decoration: none;
+  transition: all 0.3s;
+}
+
+#wrapper {
+  display: flex;
+  width: 100%;
+  align-items: stretch;
+}
+
+:root {
+  --sidebar-bg: #2c3e50;
+  --sidebar-header: #34495e;
+  --accent-color: #87CEEB; /* Sky blue */
+  --text-color: #ffffff;
+  --hover-bg: rgba(255, 255, 255, 0.1);
+  --submenu-bg: #1a252f;
+}
+
+#sidebar {
+  width: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  z-index: 999;
+  background: var(--sidebar-bg);
+  color: var(--text-color);
+  transition: all 0.3s;
+  box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+#sidebar.expanded {
+  width: 250px;
+}
+
+#sidebar:not(.expanded) {
+  display: none;
+}
+
+/* Collapsed state styles */
+#sidebar:not(.expanded) .sidebar-header h3,
+#sidebar:not(.expanded) .sidebar-button span,
+#sidebar:not(.expanded) .sidebar-subitem span {
+  display: none;
+}
+
+#sidebar:not(.expanded) .sidebar-button {
+  text-align: center;
+  padding: 15px 5px;
+}
+
+#sidebar:not(.expanded) .sidebar-button i {
+  margin-right: 0;
+  font-size: 1.5em;
+}
+
+#sidebar:hover {
+  width: 250px;
+}
+
+#sidebar:hover .sidebar-header h3,
+#sidebar:hover .sidebar-button span,
+#sidebar:hover .sidebar-subitem span {
+  display: inline;
+}
+
+#sidebar:hover .sidebar-button {
+  text-align: left;
+  padding: 12px 15px;
+}
+
+#sidebar:hover .sidebar-button i {
+  margin-right: 10px;
+  font-size: 1em;
+}
+
+#sidebar.active {
+  transform: translateX(-250px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+#sidebar:not(.active) {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sidebar-header {
+  padding: 20px;
+  background: var(--sidebar-header);
+  border-bottom: 2px solid var(--accent-color);
+}
+
+.sidebar-components {
+  padding: 20px 0;
+  border-bottom: 1px solid #607d8b;
+}
+
+.sidebar-paragraph {
+  color: #fff;
+  padding: 10px;
+}
+
+.dropdown-toggle::after {
+  display: block;
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+}
+
+a.right-arrow[data-toggle="collapse"] {
+  position: relative;
+}
+
+.sidebar-button {
+  padding: 12px 15px;
+  font-size: 1.1em;
+  display: block;
+  transition: all 0.3s ease;
+  border-left: 3px solid transparent;
+  color: white;
+}
+
+.sidebar-button:hover {
+  background: rgba(135, 206, 235, 0.2); /* Sky blue with transparency */
+  color: var(--accent-color);
+  border-left: 3px solid var(--accent-color);
+  box-shadow: 0 2px 8px rgba(135, 206, 235, 0.3);
+}
+
+.sidebar-button i {
+  margin-right: 10px;
+  color: var(--accent-color);
+  transition: all 0.3s ease;
+}
+
+.sidebar-button:hover i {
+  transform: scale(1.1);
+}
+
+.sidebar-subitem {
+  font-size: 0.9em !important;
+  padding-left: 40px !important;
+  background: var(--submenu-bg);
+  transition: all 0.2s ease;
+}
+
+.sidebar-subitem:hover {
+  background: var(--hover-bg);
+  padding-left: 45px !important;
+}
+
+.sidebar-subitem i {
+  color: var(--accent-color);
+}
+
+ul.CTAs {
+  padding: 20px;
+}
+
+ul.CTAs a {
+  text-align: center;
+  font-size: 0.9em !important;
+  display: block;
+  border-radius: 5px;
+  margin-bottom: 5px;
+}
+
+a.nav-button {
+  background: #fff;
+  color: #607d8b;
+}
+
+.bottomleft {
+  bottom: 0;
+  position: absolute;
+  min-width: 250px;
+  max-width: 250px;
+  background: var(--sidebar-header);
+  border-top: 1px solid var(--accent-color);
+}
+
+/* Toggle button styling */
+#sidebarCollapse {
+  position: fixed;
+  left: 2px; /* Move hamburger button further left */
+  top: 20px;
+  z-index: 1000;
+  background: transparent;
+  color: var(--accent-color); /* Sky blue */
+  border: none;
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.sidebar-header {
+  position: relative;
+  z-index: 999;
+  padding-left: 40px; /* Adjust space for hamburger button and title */
+  display: flex;
+  align-items: center;
+  gap: 10px; /* Space between button and title */
+}
+
+#sidebarCollapse:hover {
+  color: #6bb9e0; /* Darker sky blue on hover */
+  transform: scale(1.05);
+}
+
+#sidebarCollapse i {
+  font-size: 1.5em;
+}
+
+/* ---------------------------------------------------
+    CONTENT STYLE
+----------------------------------------------------- */
+
+#content {
+  width: 100%;
+  margin-left: 0;
+  padding: 20px;
+  min-height: 100vh;
+  transition: all 0.3s ease;
+}
+
+#content.expanded {
+  width: calc(100% - 250px);
+  margin-left: 250px;
+}
+
+#content.sidebar-minimized {
+  width: 100%;
+  margin-left: 0;
+}
+
+/* ---------------------------------------------------
+    MEDIAQUERIES
+----------------------------------------------------- */
+
+@media (max-width: 768px) {
+  #sidebar {
+    margin-left: -250px;
+  }
+  #sidebar.active {
+    margin-left: 0;
+  }
+  #sidebarCollapse span {
+    display: none;
+  }
+}

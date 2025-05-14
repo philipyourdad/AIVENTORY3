@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+
+{% block title %} {{ title }} {% endblock title %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Card with Bootstrap shadow -->
+            <div class="card border-0 shadow rounded-4 mb-4">
+                <!-- Header -->
+                <div class="card-header bg-light py-3 px-4 border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h1 class="h3 mb-0 text-primary fw-bold">
+                            {% if 'Edit' in title %}
+                            <i class="fas fa-edit me-2"></i>
+                            {% else %}
+                            <i class="fas fa-plus-circle me-2"></i>
+                            {% endif %}
+                            {{ title }}
+                        </h1>
+                        <a href="{% url 'inventory' %}" class="btn btn-outline-primary rounded-pill px-3">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Inventory
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Form content -->
+                <div class="card-body p-4">
+                    <form method="post" class="needs-validation" id="stockForm" novalidate>
+                        {% csrf_token %}
+                        {{ form.non_field_errors }}
+
+                        <!-- Name field -->
+                        <div class="mb-4">
+                            <label for="{{ form.name.id_for_label }}" class="form-label fw-semibold">
+                                <i class="fas fa-box-open me-2 text-secondary"></i>Item Name
+                            </label>
+                            {{ form.name }}
+                            <div class="form-text">Enter the full name of the inventory item</div>
+                        </div>
+
+                        <div class="row mb-4">
+                            <!-- Quantity field -->
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <label for="{{ form.quantity.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-sort-amount-up me-2 text-secondary"></i>Quantity
+                                </label>
+                                <div class="input-group">
+                                    <button type="button" class="btn btn-outline-secondary" id="decreaseBtn">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                    {{ form.quantity }}
+                                    <button type="button" class="btn btn-outline-secondary" id="increaseBtn">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">Number of items in stock</div>
+                            </div>
+                            
+                            <!-- Price field -->
+                            <div class="col-md-6">
+                                <label for="{{ form.price.id_for_label }}" class="form-label fw-semibold">
+                                    <i class="fas fa-tag me-2 text-secondary"></i>Price
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    {{ form.price }}
+                                </div>
+                                <div class="form-text">Price per unit (in pesos)</div>
+                            </div>
+                        </div>
+
+                        <!-- Action buttons -->
+                        <div class="d-flex flex-column flex-md-row justify-content-end gap-2 mt-4">
+                            <a href="{% url 'inventory' %}" class="btn btn-light btn-lg order-3 order-md-1">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                            {% if delbtn %}
+                                <a href="{% url 'delete-stock' object.pk %}" class="btn btn-danger btn-lg order-2">
+                                    <i class="fas fa-trash-alt me-2"></i>Delete
+                                </a>
+                            {% endif %}
+                            <button type="submit" class="btn btn-primary btn-lg order-1 order-md-3" id="saveBtn">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" id="saveSpinner"></span>
+                                <i class="fas fa-save me-2" id="saveIcon"></i>{{ savebtn }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add Bootstrap classes to form elements
+    const formInputs = document.querySelectorAll('#stockForm input, #stockForm select, #stockForm textarea');
+    formInputs.forEach(input => {
+        input.classList.add('form-control');
+    });
+
+    // Quantity buttons functionality
+    const quantityInput = document.querySelector('#{{ form.quantity.id_for_label }}');
+    const decreaseBtn = document.getElementById('decreaseBtn');
+    const increaseBtn = document.getElementById('increaseBtn');
+    
+    if (quantityInput && decreaseBtn && increaseBtn) {
+        // Center quantity value
+        quantityInput.style.textAlign = 'center';
+        
+        decreaseBtn.addEventListener('click', function() {
+            let currentValue = parseInt(quantityInput.value) || 0;
+            if (currentValue > 0) {
+                quantityInput.value = currentValue - 1;
+                quantityInput.dispatchEvent(new Event('change'));
+            }
+        });
+        
+        increaseBtn.addEventListener('click', function() {
+            let currentValue = parseInt(quantityInput.value) || 0;
+            quantityInput.value = currentValue + 1;
+            quantityInput.dispatchEvent(new Event('change'));
+        });
+    }
+
+    // Form submission loading state
+    const stockForm = document.getElementById('stockForm');
+    const saveBtn = document.getElementById('saveBtn');
+    const saveSpinner = document.getElementById('saveSpinner');
+    const saveIcon = document.getElementById('saveIcon');
+    
+    if (stockForm && saveBtn) {
+        stockForm.addEventListener('submit', function() {
+            saveBtn.disabled = true;
+            saveSpinner.classList.remove('d-none');
+            saveIcon.classList.add('d-none');
+        });
+    }
+});
+</script>
+{% endblock content %}

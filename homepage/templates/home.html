@@ -1,0 +1,460 @@
+{% extends "base.html" %}
+<!-- Log on to codeastro.com for more projects -->
+{% load static %}
+{% block title %} Home {% endblock title %}
+{% block content %}
+
+<!-- Custom CSS for animations -->
+<style>
+  .animate-card {
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+  }
+  
+  .animate-card.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  
+  .card {
+    transition: all 0.3s ease;
+  }
+  
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;
+  }
+  
+  .product-icon {
+    transition: all 0.3s ease;
+  }
+  
+  .product-row:hover .product-icon {
+    background-color: #e9ecef !important;
+    transform: scale(1.1);
+  }
+</style>
+
+<!--begin::Dashboard Container-->
+<div class="container-fluid py-4">
+  <div class="row g-4">
+    <!-- Statistics Cards -->
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100 animate-card" style="animation-delay: 0.1s;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center">
+            <div class="me-3 bg-primary bg-opacity-10 p-3 rounded">
+              <i class="bi bi-box-seam text-primary fs-1"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Total Stock Items</h6>
+              <h3 class="mb-0 fw-bold">{{ labels|length }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100 animate-card" style="animation-delay: 0.2s;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center">
+            <div class="me-3 bg-success bg-opacity-10 p-3 rounded">
+              <i class="bi bi-graph-up-arrow text-success fs-1"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Recent Sales</h6>
+              <h3 class="mb-0 fw-bold">{{ sales|length }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100 animate-card" style="animation-delay: 0.3s;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center">
+            <div class="me-3 bg-warning bg-opacity-10 p-3 rounded">
+              <i class="bi bi-cart-plus text-warning fs-1"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Recent Purchases</h6>
+              <h3 class="mb-0 fw-bold">{{ purchases|length }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-md-6 col-lg-3">
+      <div class="card border-0 shadow-sm h-100 animate-card" style="animation-delay: 0.4s;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center">
+            <div class="me-3 bg-info bg-opacity-10 p-3 rounded">
+              <i class="bi bi-truck text-info fs-1"></i>
+            </div>
+            <div>
+              <h6 class="text-muted mb-1">Suppliers</h6>
+              <h3 class="mb-0 fw-bold">{{ supplier_count }}</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Selling Products -->
+    <div class="col-12 col-lg-8">
+      <div class="card border-0 shadow-sm animate-card" style="animation-delay: 0.5s;">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white border-0 py-3">
+          <h5 class="mb-0 fw-bold">Top Selling Products</h5>
+          <div class="ms-auto d-flex gap-2">
+            <a href="#" class="btn btn-sm btn-outline-secondary" title="Download">
+              <i class="bi bi-download"></i>
+            </a>
+            <a href="{% url 'inventory' %}" class="btn btn-sm btn-outline-secondary" title="View All">
+              <i class="bi bi-list"></i>
+            </a>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th class="border-0">Product</th>
+                  <th class="border-0">Price</th>
+                  <th class="border-0">Sales</th>
+                  <th class="border-0 text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% if top_selling_products %}
+                  {% for product in top_selling_products %}
+                    <tr class="product-row" data-product-id="{{ product.stock__id }}">
+                      <td>
+                        <div class="d-flex align-items-center">
+                          <div class="product-icon rounded-circle p-2 me-3 bg-light">
+                            <i class="bi bi-box text-secondary"></i>
+                          </div>
+                          <div>
+                            <h6 class="mb-0">{{ product.stock__name }}</h6>
+                            {% if product.is_new %}
+                              <span class="badge bg-danger">NEW</span>
+                            {% endif %}
+                          </div>
+                        </div>
+                      </td>
+                      <td>₱{{ product.stock__price }} PHP</td>
+                      <td>
+                        <div>
+                          <span class="{{ product.growth_class }} me-1">
+                            <i class="bi {{ product.growth_icon }}"></i>
+                            {{ product.sales_growth_pct }}%
+                          </span>
+                        </div>
+                        <div class="progress mt-1" style="height: 5px;">
+                          <div class="progress-bar {% if product.growth_class == 'text-success' %}bg-success{% else %}bg-danger{% endif %}" 
+                               role="progressbar" 
+                               style="width: {{ product.total_quantity }}%;" 
+                               aria-valuenow="{{ product.total_quantity }}" 
+                               aria-valuemin="0" 
+                               aria-valuemax="100"></div>
+                        </div>
+                        <small class="text-muted">{{ product.total_quantity }} Sold</small>
+                      </td>
+                      <td class="text-end">
+                        <a href="{% url 'edit-stock' product.stock__id %}" class="btn btn-sm btn-light me-1"> 
+                          <i class="bi bi-pencil"></i> 
+                        </a>
+                        <a href="#" class="btn btn-sm btn-light view-details"> 
+                          <i class="bi bi-search"></i> 
+                        </a>
+                      </td>
+                    </tr>
+                  {% endfor %}
+                {% else %}
+                  <tr>
+                    <td colspan="4" class="text-center py-5">
+                      <div class="py-4">
+                        <i class="bi bi-bar-chart-line fs-1 text-muted"></i>
+                        <p class="text-muted mb-0 mt-3">No sales data available yet</p>
+                        <a href="{% url 'new-sale' %}" class="btn btn-sm btn-primary mt-3">Create First Sale</a>
+                      </div>
+                    </td>
+                  </tr>
+                {% endif %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Inventory Chart -->
+    <div class="col-12 col-lg-4">
+      <div class="card border-0 shadow-sm h-100 animate-card" style="animation-delay: 0.6s;">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white border-0 py-3">
+          <h5 class="mb-0 fw-bold">Inventory Status</h5>
+          <div class="dropdown">
+            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <i class="bi bi-three-dots-vertical"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end">
+              <li><a class="dropdown-item" href="#">Last 7 Days</a></li>
+              <li><a class="dropdown-item" href="#">Last 30 Days</a></li>
+              <li><a class="dropdown-item" href="#">This Year</a></li>
+            </ul>
+          </div>
+        </div>
+        <div class="card-body">
+          <canvas id="inventory-chart" height="250"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-12">
+      <div class="card border-0 shadow-sm animate-card" style="animation-delay: 0.7s;">
+        <div class="card-header bg-white border-0 py-3">
+          <h5 class="mb-0 fw-bold">Quick Actions</h5>
+        </div>
+        <div class="card-body">
+          <div class="row g-3">
+            <div class="col-md-6">
+              <a href="{% url 'select-supplier' %}" class="btn btn-primary d-flex align-items-center justify-content-center gap-2 w-100 py-3">
+                <i class="bi bi-box-arrow-in-down"></i>
+                <span>New Incoming Stock</span>
+              </a>
+            </div>
+            <div class="col-md-6">
+              <a href="{% url 'new-sale' %}" class="btn btn-success d-flex align-items-center justify-content-center gap-2 w-100 py-3">
+                <i class="bi bi-box-arrow-right"></i>
+                <span>New Outgoing Stock</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm animate-card" style="animation-delay: 0.8s;">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white border-0 py-3">
+          <h5 class="mb-0 fw-bold">Recent Sales</h5>
+          <a href="{% url 'sales-list' %}" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {% if sales %}
+              {% for item in sales %}
+                <div class="list-group-item list-group-item-action p-3 border-0">
+                  <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-1">Bill #{{ item.billno }}</h6>
+                      <p class="mb-1">Purchased by <strong>{{ item.name }}</strong></p>
+                      <small class="text-muted"><i class="bi bi-calendar me-1"></i>{{ item.time.date }}</small>
+                    </div>
+                    <div class="text-end">
+                      <h6 class="mb-1">₱{{ item.get_total_price }}</h6>
+                      <a href="{% url 'sale-bill' item.billno %}" class="btn btn-sm btn-outline-primary mt-2">View Bill</a>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-center py-4">
+                <p class="text-muted mb-0">No recent sales</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-12 col-lg-6">
+      <div class="card border-0 shadow-sm animate-card" style="animation-delay: 0.9s;">
+        <div class="card-header d-flex justify-content-between align-items-center bg-white border-0 py-3">
+          <h5 class="mb-0 fw-bold">Recent Purchases</h5>
+          <a href="{% url 'purchases-list' %}" class="btn btn-sm btn-outline-secondary">View All</a>
+        </div>
+        <div class="card-body p-0">
+          <div class="list-group list-group-flush">
+            {% if purchases %}
+              {% for item in purchases %}
+                <div class="list-group-item list-group-item-action p-3 border-0">
+                  <div class="d-flex w-100 justify-content-between align-items-center">
+                    <div>
+                      <h6 class="mb-1">Bill #{{ item.billno }}</h6>
+                      <p class="mb-1">Purchased from <strong>{{ item.supplier.name }}</strong></p>
+                      <small class="text-muted"><i class="bi bi-calendar me-1"></i>{{ item.time.date }}</small>
+                    </div>
+                    <div class="text-end">
+                      <h6 class="mb-1">₱{{ item.get_total_price }}</h6>
+                      <a href="{% url 'purchase-bill' item.billno %}" class="btn btn-sm btn-outline-primary mt-2">View Bill</a>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="text-center py-4">
+                <p class="text-muted mb-0">No recent purchases</p>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!--end::Dashboard Container-->
+
+<!-- JavaScript for Interactive Features -->
+<script src="{% static 'js/Chart.min.js' %}"></script>  
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Animate cards on page load
+    const animatedCards = document.querySelectorAll('.animate-card');
+    setTimeout(() => {
+      animatedCards.forEach(card => {
+        card.classList.add('show');
+      });
+    }, 100);
+    
+    // Make product rows interactive
+    const productRows = document.querySelectorAll('.product-row');
+    productRows.forEach(row => {
+      row.addEventListener('mouseover', function() {
+        this.style.backgroundColor = '#f8f9fa';
+        this.style.cursor = 'pointer';
+      });
+      
+      row.addEventListener('mouseout', function() {
+        this.style.backgroundColor = '';
+      });
+      
+      // Make product row clickable
+      row.addEventListener('click', function() {
+        const productId = this.getAttribute('data-product-id');
+        // Redirect to the stock detail view
+        window.location.href = "{% url 'inventory' %}" + "?product_id=" + productId;
+      });
+
+      // Make the view details button clickable separately (prevent event bubbling)
+      const viewDetailsBtn = row.querySelector('.view-details');
+      if (viewDetailsBtn) {
+        viewDetailsBtn.addEventListener('click', function(e) {
+          e.stopPropagation(); // Prevent row click event
+          const productId = row.getAttribute('data-product-id');
+          showQuickView(productId);
+        });
+      }
+    });
+
+    // Function to show a quick view modal
+    function showQuickView(productId) {
+      // Create and show a modal with product details
+      const modal = document.createElement('div');
+      modal.classList.add('modal', 'fade');
+      modal.setAttribute('tabindex', '-1');
+      modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title">Product Quick View</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="text-center py-4">
+                <div class="spinner-border text-primary" role="status">
+                  <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading product details...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.appendChild(modal);
+      
+      // Initialize and show the Bootstrap modal
+      const modalInstance = new bootstrap.Modal(modal);
+      modalInstance.show();
+      
+      // You would typically load product data via AJAX here
+      // For demo, we're just showing the modal
+      
+      // Handle modal close/dispose
+      modal.addEventListener('hidden.bs.modal', function () {
+        modal.remove();
+      });
+    }
+
+    // Inventory Chart
+    const inventoryChart = document.getElementById('inventory-chart');
+    if (inventoryChart) {
+      // Apply chart defaults
+      Chart.defaults.global.defaultFontFamily = 'Source Sans 3, sans-serif';
+      Chart.defaults.global.defaultFontColor = '#6c757d';
+      
+      // Get data from Django context
+      const labels = JSON.parse('{{ labels|escapejs }}');
+      const data = JSON.parse('{{ data|escapejs }}');
+      
+      // Only show top 5 items for better visibility
+      const displayLabels = labels.slice(0, 5);
+      const displayData = data.slice(0, 5);
+      
+      // Generate random colors for the chart
+      const backgroundColors = displayLabels.map(() => {
+        const r = Math.floor(Math.random() * 200);
+        const g = Math.floor(Math.random() * 200);
+        const b = Math.floor(Math.random() * 200);
+        return `rgba(${r}, ${g}, ${b}, 0.7)`;
+      });
+      
+      new Chart(inventoryChart, {
+        type: 'doughnut',
+        data: {
+          labels: displayLabels,
+          datasets: [{
+            data: displayData,
+            backgroundColor: backgroundColors,
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          legend: {
+            position: 'right',
+            labels: {
+              boxWidth: 12
+            }
+          },
+          animation: {
+            animateScale: true,
+            animateRotate: true
+          },
+          tooltips: {
+            callbacks: {
+              label: function(tooltipItem, data) {
+                const dataset = data.datasets[tooltipItem.datasetIndex];
+                const total = dataset.data.reduce((previousValue, currentValue) => previousValue + currentValue);
+                const currentValue = dataset.data[tooltipItem.index];
+                const percentage = Math.floor(((currentValue/total) * 100) + 0.5);
+                
+                return `${data.labels[tooltipItem.index]}: ${currentValue} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      });
+    }
+  });
+</script>
+
+{% endblock content %}

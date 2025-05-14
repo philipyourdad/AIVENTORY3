@@ -1,0 +1,388 @@
+{% extends "base.html" %}
+{% load static %}
+
+
+{% block title %} New Purchase {% endblock title %}
+
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-6 fw-bold text-primary">
+            <i class="fas fa-truck-loading me-2"></i>New Purchase
+        </h1>
+        <div>
+            <a href="{% url 'select-supplier' %}" class="btn btn-outline-secondary btn-sm me-2">
+                <i class="fas fa-arrow-left me-2"></i>Back
+            </a>
+            <a href="{% url 'purchases-list' %}" class="btn btn-outline-secondary btn-sm">
+                <i class="fas fa-list me-2"></i>All Purchases
+            </a>
+        </div>
+    </div>
+
+    <!-- Supplier Card -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-header bg-light py-3 px-4 border-0">
+            <h2 class="h5 mb-0 fw-bold">
+                <i class="fas fa-building me-2 text-secondary"></i>Supplier Details
+            </h2>
+        </div>
+        <div class="card-body p-4">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label for="id_name" class="form-label fw-semibold text-secondary">Supplier Name</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-user"></i></span>
+                        <input type="text" class="form-control" id="id_name" value="{{ supplier.name }}" disabled>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="id_phone" class="form-label fw-semibold text-secondary">Phone Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-phone"></i></span>
+                        <input type="text" class="form-control" id="id_phone" value="{{ supplier.phone }}" disabled>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label for="id_gstin" class="form-label fw-semibold text-secondary">GSTIN Number</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light"><i class="fas fa-file-invoice"></i></span>
+                        <input type="text" class="form-control" id="id_gstin" value="{{ supplier.gstin }}" disabled>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="alert alert-info d-flex align-items-center" role="alert">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <div>
+                            Purchasing from <strong>{{ supplier.name }}</strong>. Please add product details below.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Form -->
+    <form method="post" id="purchaseForm">
+        {% csrf_token %}
+        {{ formset.management_form }}
+
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-header bg-light py-3 px-4 border-0 d-flex justify-content-between align-items-center">
+                <h2 class="h5 mb-0 fw-bold">
+                    <i class="fas fa-boxes me-2 text-secondary"></i>Product Details
+                </h2>
+                <button type="button" class="btn btn-primary btn-sm add-form-row">
+                    <i class="fas fa-plus me-2"></i>Add Product
+                </button>
+            </div>
+            <div class="card-body p-4">
+                <div id="stockitem">
+                    {% for form in formset %}
+                    <div class="form-row mb-4 p-3 bg-light rounded-3 position-relative">
+                        <div class="row g-3">
+                            <div class="col-md-5">
+                                {{ form.stock.errors }}
+                                <label class="form-label fw-semibold text-secondary">
+                                    <i class="fas fa-box me-2"></i>Select Stock
+                                </label>
+                                {{ form.stock }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold text-secondary">
+                                    <i class="fas fa-tag me-2"></i>Price Per Item
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    {{ form.perprice }}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                {{ form.quantity.errors }}
+                                <label class="form-label fw-semibold text-secondary">
+                                    <i class="fas fa-sort-amount-up me-2"></i>Quantity
+                                </label>
+                                {{ form.quantity }}
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label fw-semibold text-secondary">
+                                    <i class="fas fa-money-bill-wave me-2"></i>Total Price
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="text" class="form-control totalprice" value="0.00" disabled>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-form-row" title="Remove Product">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Card -->
+        <div class="card border-0 shadow-sm rounded-3 mb-4">
+            <div class="card-body p-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="fw-semibold">Total Items:</span>
+                            <span id="totalItems" class="text-secondary">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="fw-semibold">Total Amount:</span>
+                            <span id="totalAmount" class="fw-bold text-success">₱0.00</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-end">
+                        <div class="btn-group">
+                            <button type="submit" class="btn btn-success btn-sm px-3" id="submitBtn">
+                                <span class="spinner-border spinner-border-sm me-2 d-none" role="status" aria-hidden="true" id="loadingSpinner"></span>
+                                <i class="fas fa-check-circle me-2" id="submitIcon"></i>Complete Purchase
+                            </button>
+                            <a href="{% url 'purchases-list' %}" class="btn btn-outline-secondary btn-sm px-3">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Template for new form row -->
+<template id="formRowTemplate">
+    <div class="form-row mb-4 p-3 bg-light rounded-3 position-relative">
+        <div class="row g-3">
+            <div class="col-md-5">
+                <label class="form-label fw-semibold text-secondary">
+                    <i class="fas fa-box me-2"></i>Select Stock
+                </label>
+                <select name="form-__prefix__-stock" class="form-select stock-select" id="id_form-__prefix__-stock">
+                    <option value="">---------</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold text-secondary">
+                    <i class="fas fa-tag me-2"></i>Price Per Item
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">₱</span>
+                    <input type="number" name="form-__prefix__-perprice" step="0.01" min="0" class="form-control price" id="id_form-__prefix__-perprice">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold text-secondary">
+                    <i class="fas fa-sort-amount-up me-2"></i>Quantity
+                </label>
+                <input type="number" name="form-__prefix__-quantity" min="1" value="1" class="form-control quantity" id="id_form-__prefix__-quantity">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label fw-semibold text-secondary">
+                    <i class="fas fa-money-bill-wave me-2"></i>Total Price
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">₱</span>
+                    <input type="text" class="form-control totalprice" value="0.00" disabled>
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="button" class="btn btn-outline-danger btn-sm w-100 remove-form-row" title="Remove Product">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script type="text/javascript" src="{% static 'js/jquery-3.2.1.slim.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/dialogbox.js' %}"></script>
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        // Apply Bootstrap classes to form controls
+        const formControls = document.querySelectorAll('input, select');
+        formControls.forEach(el => {
+            if (el.tagName === 'SELECT') {
+                el.classList.add('form-select');
+            } else {
+                el.classList.add('form-control');
+            }
+        });
+        
+        // Initialize custom alert
+        var custom_alert = new custom_alert();
+        
+        // Form counter
+        var total = $('.form-row').length || 1;
+        
+        // Update element index
+        function updateElementIndex(el, prefix, ndx) {
+            var id_regex = new RegExp('(' + prefix + '-\\d+)');
+            var replacement = prefix + '-' + ndx;
+            if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));
+            if (el.id) el.id = el.id.replace(id_regex, replacement);
+            if (el.name) el.name = el.name.replace(id_regex, replacement);
+        }
+        
+        // Clone template for new row
+        function addFormRow() {
+            // Get the template content
+            const template = document.getElementById('formRowTemplate');
+            if (!template) return false;
+            
+            const clone = document.importNode(template.content, true);
+            
+            // Update form indices
+            let newRow = clone.querySelector('.form-row');
+            let inputs = newRow.querySelectorAll('input, select');
+            
+            inputs.forEach(input => {
+                let name = input.getAttribute('name');
+                if (name) {
+                    name = name.replace('__prefix__', total);
+                    let id = 'id_' + name;
+                    input.setAttribute('name', name);
+                    input.setAttribute('id', id);
+                }
+            });
+            
+            // Update labels
+            let labels = newRow.querySelectorAll('label');
+            labels.forEach(label => {
+                let forAttr = label.getAttribute('for');
+                if (forAttr) {
+                    forAttr = forAttr.replace('__prefix__', total);
+                    label.setAttribute('for', forAttr);
+                }
+            });
+            
+            // Update counter
+            total++;
+            document.getElementById('id_form-TOTAL_FORMS').value = total;
+            
+            // Append to container
+            document.getElementById('stockitem').appendChild(newRow);
+            
+            // Attach event listeners
+            bindEvents(newRow);
+            
+            // Update summary
+            updateSummary();
+            
+            return false;
+        }
+        
+        // Remove form row
+        function removeFormRow(btn) {
+            if (total > 1) {
+                const row = btn.closest('.form-row');
+                row.remove();
+                
+                // Update form indices
+                const rows = document.querySelectorAll('.form-row');
+                document.getElementById('id_form-TOTAL_FORMS').value = rows.length;
+                
+                rows.forEach((row, index) => {
+                    row.querySelectorAll('input, select').forEach(input => {
+                        updateElementIndex(input, 'form', index);
+                    });
+                });
+                
+                total = rows.length;
+                updateSummary();
+            } else {
+                custom_alert.render("At least one product is required");
+            }
+            
+            return false;
+        }
+        
+        // Update price calculation
+        function updatePrice(element) {
+            const row = element.closest('.form-row');
+            const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+            const price = parseFloat(row.querySelector('.price').value) || 0;
+            
+            // Calculate total
+            const total = (quantity * price).toFixed(2);
+            row.querySelector('.totalprice').value = total;
+            
+            // Update summary
+            updateSummary();
+            
+            return false;
+        }
+        
+        // Update summary information
+        function updateSummary() {
+            let totalItems = 0;
+            let totalAmount = 0;
+            
+            document.querySelectorAll('.form-row').forEach(row => {
+                const quantity = parseFloat(row.querySelector('.quantity').value) || 0;
+                const total = parseFloat(row.querySelector('.totalprice').value) || 0;
+                
+                totalItems += quantity;
+                totalAmount += total;
+            });
+            
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('totalAmount').textContent = '₱' + totalAmount.toFixed(2);
+        }
+        
+        // Bind events to form row
+        function bindEvents(row) {
+            // If row is a selector, query for the element
+            if (typeof row === 'string') {
+                row = document.querySelector(row);
+            }
+            
+            // Price and quantity change
+            row.querySelectorAll('.price, .quantity').forEach(input => {
+                input.addEventListener('input', function() {
+                    updatePrice(this);
+                });
+            });
+            
+            // Remove button
+            row.querySelector('.remove-form-row').addEventListener('click', function() {
+                removeFormRow(this);
+            });
+        }
+        
+        // Initial binding
+        document.querySelectorAll('.form-row').forEach(row => {
+            bindEvents(row);
+        });
+        
+        // Add form row button
+        document.querySelector('.add-form-row').addEventListener('click', function(e) {
+            e.preventDefault();
+            addFormRow();
+        });
+        
+        // Form submission
+        document.getElementById('purchaseForm').addEventListener('submit', function() {
+            const btn = document.getElementById('submitBtn');
+            const spinner = document.getElementById('loadingSpinner');
+            const icon = document.getElementById('submitIcon');
+            
+            spinner.classList.remove('d-none');
+            icon.classList.add('d-none');
+            btn.disabled = true;
+        });
+        
+        // Initial summary update
+        updateSummary();
+    });
+</script>
+{% endblock content %}

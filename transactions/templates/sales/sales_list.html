@@ -1,0 +1,461 @@
+{% extends "base.html" %}
+{% load widget_tweaks %}
+
+{% block title %}Sales List{% endblock title %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+
+<div class="container-fluid px-4 py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-6 fw-bold text-primary">
+            <i class="fas fa-receipt me-2"></i>Sales Records
+        </h1>
+        <a href="{% url 'new-sale' %}" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus-circle me-2"></i>New Outgoing Stock
+        </a>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4">
+        <div class="card-body p-3">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-0"><i class="fas fa-search"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-0 bg-light" placeholder="Search by bill number, customer or product...">
+                    </div>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="showAllBtn">
+                            <i class="fas fa-list me-1"></i> All
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="showTodayBtn">
+                            <i class="fas fa-calendar-day me-1"></i> Today
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm" id="showWeekBtn">
+                            <i class="fas fa-calendar-week me-1"></i> This Week
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sales Table -->
+    <div class="card border-0 shadow-sm rounded-3">
+        <div class="card-body p-0">
+            {% if bills %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" id="salesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="10%" class="sortable" data-sort="billno">
+                                <div class="d-flex align-items-center">
+                                    Bill No. <i class="fas fa-sort ms-1 text-muted"></i>
+                                </div>
+                            </th>
+                            <th width="15%" class="sortable" data-sort="customer">
+                                <div class="d-flex align-items-center">
+                                    Customer <i class="fas fa-sort ms-1 text-muted"></i>
+                                </div>
+                            </th>
+                            <th width="20%">Items Sold</th>
+                            <th width="10%">Qty</th>
+                            <th width="10%" class="sortable" data-sort="price">
+                                <div class="d-flex align-items-center">
+                                    Total <i class="fas fa-sort ms-1 text-muted"></i>
+                                </div>
+                            </th>
+                            <th width="15%" class="sortable" data-sort="date">
+                                <div class="d-flex align-items-center">
+                                    Date <i class="fas fa-sort ms-1 text-muted"></i>
+                                </div>
+                            </th>
+                            <th width="20%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for sale in bills %}
+                        <tr class="sale-row"
+                            data-bill="{{ sale.billno }}"
+                            data-customer="{{ sale.name }}"
+                            data-products="{% for item in sale.get_items_list %}{{ item.stock.name }} {% endfor %}"
+                            data-date="{{ sale.time.date|date:"Y-m-d" }}">
+                            <td class="fw-semibold">{{ sale.billno }}</td>
+                            <td>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ sale.name }}</span>
+                                    <small class="text-muted">Ph: {{ sale.phone }}</small>
+                                </div>
+                            </td>
+                            <td>
+                                {% for item in sale.get_items_list %}
+                                <div class="badge bg-light text-dark mb-1 d-block text-start">{{ item.stock.name }}</div>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                {% for item in sale.get_items_list %}
+                                <div>{{ item.quantity }}</div>
+                                {% endfor %}
+                            </td>
+                            <td class="text-success fw-bold">₱{{ sale.get_total_price }}</td>
+                            <td>{{ sale.time.date|date:"M d, Y" }}</td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <a href="{% url 'sale-bill' sale.billno %}" class="btn btn-sm btn-outline-primary view-btn" title="View Bill Details">
+                                        <i class="fas fa-eye me-1"></i> View
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger delete-btn" 
+                                            data-bs-toggle="modal" data-bs-target="#deleteModal"
+                                            data-bill="{{ sale.billno }}" data-id="{{ sale.pk }}" title="Delete this bill">
+                                        <i class="fas fa-trash-alt me-1"></i> Delete
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty Search Results -->
+            <div id="noResults" class="text-center py-5 d-none">
+                <div class="py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h3 class="fw-bold text-muted">No matching records found</h3>
+                    <p class="text-muted">Try adjusting your search criteria</p>
+                    <button class="btn btn-outline-primary mt-2" id="clearSearchBtn">
+                        <i class="fas fa-times me-2"></i>Clear Search
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="d-flex justify-content-center p-3 border-top">
+                {% if is_paginated %}
+                <nav aria-label="Sales pagination">
+                    <ul class="pagination mb-0">
+                        {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page=1" aria-label="First">
+                                <span aria-hidden="true"><i class="fas fa-angle-double-left"></i></span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}" aria-label="Previous">
+                                <span aria-hidden="true"><i class="fas fa-angle-left"></i></span>
+                            </a>
+                        </li>
+                        {% endif %}
+
+                        {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                        </li>
+                        {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}" aria-label="Next">
+                                <span aria-hidden="true"><i class="fas fa-angle-right"></i></span>
+                            </a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}" aria-label="Last">
+                                <span aria-hidden="true"><i class="fas fa-angle-double-right"></i></span>
+                            </a>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+            </div>
+
+            {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-5">
+                <div class="py-5">
+                    <i class="fas fa-box-open fa-4x text-muted mb-4"></i>
+                    <h3 class="fw-bold text-muted">No Sales Records Found</h3>
+                    <p class="text-muted">Start by creating a new outgoing stock record</p>
+                    <a href="{% url 'new-sale' %}" class="btn btn-primary mt-3">
+                        <i class="fas fa-plus-circle me-2"></i>Create Sale
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0">
+            <div class="modal-header border-0 bg-danger text-white">
+                <h5 class="modal-title" id="deleteModalLabel">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Delete Sales Record
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="mb-0">Are you sure you want to delete sales bill <strong id="billNumber"></strong>?</p>
+                <p class="text-muted mt-1 mb-0">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+                <a href="#" id="confirmDelete" class="btn btn-danger btn-sm">Delete Sale</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Minimal custom CSS for enhancements */
+    .table {
+        --bs-table-hover-bg: rgba(13, 110, 253, 0.05);
+    }
+    .badge {
+        font-weight: normal;
+        white-space: normal;
+        text-align: left;
+    }
+    .sortable {
+        cursor: pointer;
+    }
+    .sortable:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+    .sortable i {
+        opacity: 0.5;
+        transition: all 0.2s;
+    }
+    .sortable:hover i {
+        opacity: 1;
+    }
+    .view-btn:hover, .delete-btn:hover {
+        transform: translateY(-2px);
+        transition: transform 0.2s;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Search functionality
+    const searchInput = document.getElementById('searchInput');
+    const saleRows = document.querySelectorAll('.sale-row');
+    const noResults = document.getElementById('noResults');
+    const salesTable = document.getElementById('salesTable');
+    const clearSearchBtn = document.getElementById('clearSearchBtn');
+    
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            let matchFound = false;
+            
+            saleRows.forEach(row => {
+                const billNo = row.getAttribute('data-bill').toLowerCase();
+                const customer = row.getAttribute('data-customer').toLowerCase();
+                const products = row.getAttribute('data-products').toLowerCase();
+                
+                if (billNo.includes(searchTerm) || 
+                    customer.includes(searchTerm) || 
+                    products.includes(searchTerm)) {
+                    row.classList.remove('d-none');
+                    matchFound = true;
+                } else {
+                    row.classList.add('d-none');
+                }
+            });
+            
+            if (matchFound) {
+                noResults.classList.add('d-none');
+                salesTable.classList.remove('d-none');
+            } else {
+                noResults.classList.remove('d-none');
+                salesTable.classList.add('d-none');
+            }
+        });
+    }
+    
+    // Clear search
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', function() {
+            searchInput.value = '';
+            saleRows.forEach(row => row.classList.remove('d-none'));
+            noResults.classList.add('d-none');
+            salesTable.classList.remove('d-none');
+        });
+    }
+    
+    // Date filters
+    const showAllBtn = document.getElementById('showAllBtn');
+    const showTodayBtn = document.getElementById('showTodayBtn');
+    const showWeekBtn = document.getElementById('showWeekBtn');
+    
+    if (showAllBtn && showTodayBtn && showWeekBtn) {
+        // Today filter
+        showTodayBtn.addEventListener('click', function() {
+            const today = new Date().toISOString().split('T')[0];
+            filterByDate(today, today);
+            
+            // Update active state
+            showAllBtn.classList.remove('active');
+            showTodayBtn.classList.add('active');
+            showWeekBtn.classList.remove('active');
+        });
+        
+        // This week filter
+        showWeekBtn.addEventListener('click', function() {
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+            
+            filterByDate(
+                startOfWeek.toISOString().split('T')[0],
+                today.toISOString().split('T')[0]
+            );
+            
+            // Update active state
+            showAllBtn.classList.remove('active');
+            showTodayBtn.classList.remove('active');
+            showWeekBtn.classList.add('active');
+        });
+        
+        // Show all
+        showAllBtn.addEventListener('click', function() {
+            saleRows.forEach(row => row.classList.remove('d-none'));
+            noResults.classList.add('d-none');
+            salesTable.classList.remove('d-none');
+            
+            // Update active state
+            showAllBtn.classList.add('active');
+            showTodayBtn.classList.remove('active');
+            showWeekBtn.classList.remove('active');
+        });
+    }
+    
+    function filterByDate(startDate, endDate) {
+        let matchFound = false;
+        
+        saleRows.forEach(row => {
+            const date = row.getAttribute('data-date');
+            
+            if (date >= startDate && date <= endDate) {
+                row.classList.remove('d-none');
+                matchFound = true;
+            } else {
+                row.classList.add('d-none');
+            }
+        });
+        
+        if (matchFound) {
+            noResults.classList.add('d-none');
+            salesTable.classList.remove('d-none');
+        } else {
+            noResults.classList.remove('d-none');
+            salesTable.classList.add('d-none');
+        }
+    }
+    
+    // Sorting functionality
+    const sortableHeaders = document.querySelectorAll('.sortable');
+    
+    if (sortableHeaders) {
+        sortableHeaders.forEach(header => {
+            header.addEventListener('click', function() {
+                const sortBy = this.getAttribute('data-sort');
+                const sortIcon = this.querySelector('i');
+                
+                // Toggle sort direction
+                const isAscending = sortIcon.classList.contains('fa-sort-up');
+                
+                // Reset all sort icons
+                document.querySelectorAll('.sortable i').forEach(icon => {
+                    icon.classList.remove('fa-sort-up', 'fa-sort-down');
+                    icon.classList.add('fa-sort');
+                    icon.classList.add('text-muted');
+                });
+                
+                // Set the new sort icon
+                sortIcon.classList.remove('fa-sort', 'text-muted');
+                
+                if (isAscending) {
+                    sortIcon.classList.add('fa-sort-down');
+                    sortRows(sortBy, false);
+                } else {
+                    sortIcon.classList.add('fa-sort-up');
+                    sortRows(sortBy, true);
+                }
+            });
+        });
+    }
+    
+    function sortRows(sortBy, ascending) {
+        const rows = Array.from(saleRows);
+        const tbody = document.querySelector('tbody');
+        
+        rows.sort((a, b) => {
+            let valueA, valueB;
+            
+            switch(sortBy) {
+                case 'billno':
+                    valueA = a.getAttribute('data-bill');
+                    valueB = b.getAttribute('data-bill');
+                    break;
+                case 'customer':
+                    valueA = a.getAttribute('data-customer');
+                    valueB = b.getAttribute('data-customer');
+                    break;
+                case 'price':
+                    valueA = parseFloat(a.querySelector('.text-success').textContent.replace('₱', ''));
+                    valueB = parseFloat(b.querySelector('.text-success').textContent.replace('₱', ''));
+                    break;
+                case 'date':
+                    valueA = a.getAttribute('data-date');
+                    valueB = b.getAttribute('data-date');
+                    break;
+                default:
+                    return 0;
+            }
+            
+            if (ascending) {
+                return valueA > valueB ? 1 : -1;
+            } else {
+                return valueA < valueB ? 1 : -1;
+            }
+        });
+        
+        // Reorder rows
+        rows.forEach(row => {
+            tbody.appendChild(row);
+        });
+    }
+    
+    // Delete modal setup
+    const deleteModal = document.getElementById('deleteModal');
+    const billNumber = document.getElementById('billNumber');
+    const confirmDelete = document.getElementById('confirmDelete');
+    
+    if (deleteModal) {
+        deleteModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const id = button.getAttribute('data-id');
+            const bill = button.getAttribute('data-bill');
+            
+            billNumber.textContent = bill;
+            confirmDelete.href = `{% url 'delete-sale' 0 %}`.replace('0', id);
+        });
+    }
+});
+</script>
+{% endblock content %}

@@ -1,0 +1,561 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}New Sale{% endblock title %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-6 fw-bold text-primary"><i class="fas fa-cash-register me-2"></i>New Sale</h1>
+        <a href="{% url 'sales-list' %}" class="btn btn-outline-secondary rounded-pill">
+            <i class="fas fa-arrow-left me-2"></i>Back to Sales
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-lg sale-card animate__animated animate__fadeIn">
+        <div class="card-body p-4">
+            <form method="post" id="salesForm">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+
+                <!-- Customer Section -->
+                <div class="mb-5 pb-4 border-bottom">
+                    <h2 class="h4 fw-bold mb-3 text-primary">
+                        <i class="fas fa-user-circle me-2"></i>Customer Details
+                    </h2>
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Customer Name</label>
+                            <div class="input-group input-group-custom">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                {{ form.name }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.phone.id_for_label }}" class="form-label">Phone Number</label>
+                            <div class="input-group input-group-custom">
+                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                {{ form.phone }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.email.id_for_label }}" class="form-label">Email</label>
+                            <div class="input-group input-group-custom">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                {{ form.email }}
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label for="{{ form.address.id_for_label }}" class="form-label">Address</label>
+                            <div class="input-group input-group-custom">
+                                <span class="input-group-text"><i class="fas fa-map-marker-alt"></i></span>
+                                {{ form.address }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Section -->
+                <div class="mb-5 pb-4 border-bottom">
+                    <h2 class="h4 fw-bold mb-3 text-primary">
+                        <i class="fas fa-boxes me-2"></i>Product Details
+                    </h2>
+                    {{ formset.management_form }}
+                    <div id="productItems" class="product-container">
+                        {% for iform in formset %}
+                        <div class="row g-3 mb-3 product-item animate__animated animate__fadeIn" data-index="{{ forloop.counter0 }}">
+                            <div class="col-md-5">
+                                <label class="form-label">Product</label>
+                                <div class="select-container">
+                                    {{ iform.stock }}
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Price</label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="number" name="form-{{ forloop.counter0 }}-price" 
+                                           class="form-control unit-price" value="0.00" step="0.01" min="0">
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Quantity</label>
+                                {{ iform.quantity }}
+                                <div class="form-text mt-1">
+                                    <i class="fas fa-box-open me-1"></i>Available: <span class="available-stock">0</span>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Total</label>
+                                <div class="input-group input-group-custom">
+                                    <span class="input-group-text">₱</span>
+                                    <input type="text" class="form-control item-total" value="0.00" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-1 d-flex align-items-end">
+                                <button type="button" class="btn btn-outline-danger remove-item w-100" title="Remove Product">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="text-end mt-3">
+                        <button type="button" class="btn btn-outline-primary add-item" title="Add Product">
+                            <i class="fas fa-plus me-2"></i>Add Product
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Summary Section -->
+                <div class="summary-card mb-4 animate__animated animate__fadeIn">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">Subtotal:</span>
+                                <span id="subtotal" class="text-secondary">₱0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">Tax (10%):</span>
+                                <span id="tax" class="text-warning">₱0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="fw-bold">Discount:</span>
+                                <span id="discount" class="text-success">₱0.00</span>
+                            </div>
+                            <hr>
+                            <div class="d-flex justify-content-between total-row">
+                                <span class="fw-bold fs-5">Total:</span>
+                                <span id="total" class="fw-bold fs-5 text-primary">₱0.00</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="notes-container">
+                                <textarea class="form-control custom-textarea" placeholder="Additional Notes" id="saleNotes" style="height: 120px"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="reset" class="btn btn-outline-secondary btn-action me-md-2" title="Reset Form">
+                        <i class="fas fa-undo me-2"></i>Reset
+                    </button>
+                    <button type="submit" class="btn btn-primary btn-submit-sale" title="Complete Sale">
+                        <span class="btn-loader d-none"><i class="fas fa-circle-notch fa-spin"></i></span>
+                        <span class="btn-text"><i class="fas fa-save me-2"></i>Complete Sale</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden template for new product items -->
+<template id="productTemplate">
+    <div class="row g-3 mb-3 product-item animate__animated animate__fadeIn" data-index="__prefix__">
+        <div class="col-md-5">
+            <label class="form-label">Product</label>
+            <div class="select-container">
+                <select name="form-__prefix__-stock" class="form-select product-select" id="id_form-__prefix__-stock">
+                    <option value="">Select a product</option>
+                </select>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Price</label>
+            <div class="input-group input-group-custom">
+                <span class="input-group-text">₱</span>
+                <input type="number" name="form-__prefix__-price" 
+                       class="form-control unit-price" value="0.00" step="0.01" min="0">
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Quantity</label>
+            <input type="number" name="form-__prefix__-quantity" min="1" value="1" 
+                   class="form-control quantity" id="id_form-__prefix__-quantity">
+            <div class="form-text mt-1">
+                <i class="fas fa-box-open me-1"></i>Available: <span class="available-stock">0</span>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label">Total</label>
+            <div class="input-group input-group-custom">
+                <span class="input-group-text">₱</span>
+                <input type="text" class="form-control item-total" value="0.00" readonly>
+            </div>
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+            <button type="button" class="btn btn-outline-danger remove-item w-100" title="Remove Product">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    </div>
+</template>
+
+<style>
+    /* Modern styling */
+    .sale-card {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    .form-control, .form-select {
+        border-radius: 0.5rem;
+        padding: 0.6rem 0.75rem;
+        border-color: #dee2e6;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    
+    .input-group-custom {
+        border-radius: 0.5rem;
+        overflow: hidden;
+    }
+    
+    .input-group-custom .input-group-text {
+        background-color: #f8f9fa;
+        border-color: #dee2e6;
+        color: #6c757d;
+    }
+    
+    .input-group-custom .form-control {
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+    }
+    
+    .input-group-custom:focus-within {
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+    }
+    
+    .product-item {
+        background-color: #f8f9fa;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    }
+    
+    .product-item:hover {
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        transform: translateY(-2px);
+    }
+    
+    .product-container > div:nth-child(odd) {
+        background-color: #f8f9fa;
+    }
+    
+    .product-container > div:nth-child(even) {
+        background-color: #f1f3f5;
+    }
+    
+    .summary-card {
+        background-color: #f8f9fa;
+        border-radius: 0.75rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .total-row {
+        padding-top: 0.5rem;
+    }
+    
+    .custom-textarea {
+        border-radius: 0.5rem;
+        resize: none;
+        transition: height 0.2s;
+    }
+    
+    .custom-textarea:focus {
+        height: 140px;
+    }
+    
+    .btn {
+        border-radius: 0.5rem;
+        font-weight: 500;
+        padding: 0.5rem 1rem;
+        transition: all 0.2s;
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+    
+    .btn-action {
+        padding: 0.5rem 1.25rem;
+    }
+    
+    .btn-submit-sale {
+        padding: 0.5rem 1.5rem;
+        position: relative;
+    }
+    
+    .btn-loader {
+        position: absolute;
+        left: 1rem;
+    }
+    
+    .remove-item {
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .remove-item:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .add-item {
+        border-radius: 0.5rem;
+        transition: all 0.2s;
+    }
+    
+    .add-item:hover {
+        background-color: #0d6efd;
+        color: white;
+    }
+    
+    .select-container select {
+        width: 100%;
+        border-radius: 0.5rem;
+        padding: 0.6rem 0.75rem;
+        border: 1px solid #dee2e6;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    
+    .select-container select:focus {
+        border-color: #86b7fe;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        outline: none;
+    }
+    
+    /* Animation classes */
+    .animate__fadeIn {
+        animation-duration: 0.5s;
+    }
+    
+    .animate__fadeOut {
+        animation-duration: 0.5s;
+    }
+    
+    @media (max-width: 768px) {
+        .product-item {
+            padding: 0.75rem 0.5rem;
+        }
+        
+        .summary-card {
+            padding: 1rem;
+        }
+        
+        .btn-submit-sale {
+            width: 100%;
+        }
+    }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    // Parse inventory data from Django
+    const stocks = JSON.parse('{{ stocks_json|escapejs }}');
+    const productItemsContainer = document.getElementById('productItems');
+    const productTemplate = document.getElementById('productTemplate').content;
+    const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+    let formCount = parseInt(totalForms.value);
+    
+    // Apply form-control class to all form controls
+    document.querySelectorAll('#salesForm input, #salesForm select, #salesForm textarea').forEach(el => {
+        el.classList.add('form-control');
+    });
+    
+    // Apply form-select class to all selects
+    document.querySelectorAll('#salesForm select').forEach(el => {
+        el.classList.add('form-select');
+    });
+    
+    // Update product details when a product is selected
+    function updateProductDetails(productItem, productId) {
+        const stock = stocks[productId];
+        if (!stock) return;
+        
+        const priceInput = productItem.querySelector('.unit-price');
+        const quantityInput = productItem.querySelector('.quantity');
+        const availableStock = productItem.querySelector('.available-stock');
+        
+        // Set default price from product data
+        if (priceInput.value === '0.00') {
+            priceInput.value = parseFloat(stock.price).toFixed(2);
+        }
+        
+        availableStock.textContent = stock.quantity;
+        quantityInput.setAttribute('max', stock.quantity);
+        
+        // Update total
+        updateItemTotal(productItem);
+    }
+    
+    // Update item total when quantity or price changes
+    function updateItemTotal(productItem) {
+        const quantity = parseFloat(productItem.querySelector('.quantity').value) || 0;
+        const price = parseFloat(productItem.querySelector('.unit-price').value) || 0;
+        const totalInput = productItem.querySelector('.item-total');
+        
+        totalInput.value = (quantity * price).toFixed(2);
+        updateOrderSummary();
+    }
+    
+    // Update order summary (subtotal, tax, total)
+    function updateOrderSummary() {
+        let subtotal = 0;
+        document.querySelectorAll('.item-total').forEach(input => {
+            subtotal += parseFloat(input.value) || 0;
+        });
+        
+        const tax = subtotal * 0.1; // 10% tax
+        const total = subtotal + tax;
+        
+        document.getElementById('subtotal').textContent = `₱${subtotal.toFixed(2)}`;
+        document.getElementById('tax').textContent = `₱${tax.toFixed(2)}`;
+        document.getElementById('total').textContent = `₱${total.toFixed(2)}`;
+    }
+    
+    // Add new product item
+    document.querySelector('.add-item').addEventListener('click', function() {
+        const newProduct = productTemplate.cloneNode(true);
+        const newIndex = formCount++;
+        
+        // Update all names and IDs with the new index
+        newProduct.querySelectorAll('[name]').forEach(el => {
+            el.name = el.name.replace(/__prefix__/g, newIndex);
+            if (el.id) el.id = el.id.replace(/__prefix__/g, newIndex);
+        });
+        
+        // Update data-index
+        newProduct.querySelector('.product-item').dataset.index = newIndex;
+        
+        // Add to DOM
+        productItemsContainer.appendChild(newProduct);
+        
+        // Add form-control class to inputs and selects
+        newProduct.querySelectorAll('input, select').forEach(el => {
+            el.classList.add('form-control');
+        });
+        
+        // Add form-select class to selects
+        newProduct.querySelectorAll('select').forEach(el => {
+            el.classList.add('form-select');
+        });
+        
+        // Populate product select
+        const productSelect = newProduct.querySelector('.product-select');
+        Object.entries(stocks).forEach(([id, stock]) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = `${stock.name} (${stock.quantity} available)`;
+            productSelect.appendChild(option);
+        });
+        
+        // Add event listeners
+        productSelect.addEventListener('change', function() {
+            updateProductDetails(this.closest('.product-item'), this.value);
+        });
+        
+        const quantityInput = newProduct.querySelector('.quantity');
+        quantityInput.addEventListener('input', function() {
+            updateItemTotal(this.closest('.product-item'));
+        });
+        
+        const priceInput = newProduct.querySelector('.unit-price');
+        priceInput.addEventListener('input', function() {
+            updateItemTotal(this.closest('.product-item'));
+        });
+        
+        // Add remove event
+        newProduct.querySelector('.remove-item').addEventListener('click', function() {
+            const itemRow = this.closest('.product-item');
+            itemRow.classList.remove('animate__fadeIn');
+            itemRow.classList.add('animate__fadeOut');
+            
+            setTimeout(() => {
+                itemRow.remove();
+                totalForms.value = --formCount;
+                updateOrderSummary();
+            }, 500);
+        });
+        
+        // Update form count
+        totalForms.value = formCount;
+    });
+    
+    // Remove product item
+    document.addEventListener('click', function(e) {
+        if (e.target && e.target.classList.contains('remove-item')) {
+            e.preventDefault();
+            if (document.querySelectorAll('.product-item').length > 1) {
+                const itemRow = e.target.closest('.product-item');
+                itemRow.classList.remove('animate__fadeIn');
+                itemRow.classList.add('animate__fadeOut');
+                
+                setTimeout(() => {
+                    itemRow.remove();
+                    totalForms.value = --formCount;
+                    updateOrderSummary();
+                }, 500);
+            }
+        }
+    });
+    
+    // Initialize existing product selects
+    document.querySelectorAll('.product-select').forEach(select => {
+        // Populate options
+        Object.entries(stocks).forEach(([id, stock]) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = `${stock.name} (${stock.quantity} available)`;
+            select.appendChild(option);
+        });
+        
+        // Set change event
+        select.addEventListener('change', function() {
+            updateProductDetails(this.closest('.product-item'), this.value);
+        });
+        
+        // Update details if product is already selected
+        if (select.value) {
+            updateProductDetails(select.closest('.product-item'), select.value);
+        }
+    });
+    
+    // Initialize quantity and price inputs
+    document.querySelectorAll('.quantity').forEach(input => {
+        input.addEventListener('input', function() {
+            updateItemTotal(this.closest('.product-item'));
+        });
+    });
+    
+    document.querySelectorAll('.unit-price').forEach(input => {
+        input.addEventListener('input', function() {
+            updateItemTotal(this.closest('.product-item'));
+        });
+    });
+    
+    // Add loading spinner to submit button
+    document.querySelector('#salesForm').addEventListener('submit', function() {
+        const btn = document.querySelector('.btn-submit-sale');
+        btn.querySelector('.btn-loader').classList.remove('d-none');
+        btn.querySelector('.btn-text').classList.add('opacity-0');
+        btn.disabled = true;
+    });
+    
+    // Initial summary update
+    updateOrderSummary();
+});
+</script>
+{% endblock %}

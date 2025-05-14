@@ -1,0 +1,245 @@
+{% load static %}
+{% load crispy_forms_tags %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" type="text/css" href="{% static 'bootstrap/bootstrap.min.css' %}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <title>IMS - Login</title>
+    
+    <style>
+        :root {
+            --primary-color: #0d6efd;
+            --primary-light: rgba(13, 110, 253, 0.1);
+        }
+        
+        body {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+        
+        .brand-icon {
+            width: 80px;
+            height: 80px;
+            background-color: var(--primary-light);
+            color: var(--primary-color);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 2.5rem;
+        }
+        
+        .login-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+        
+        .login-header {
+            background-color: var(--primary-light);
+            padding: 2rem 1rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .login-body {
+            padding: 2.5rem;
+        }
+        
+        .form-control {
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            border: 1px solid #ced4da;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.15);
+        }
+        
+        .btn-login {
+            border-radius: 8px;
+            padding: 0.75rem;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-back {
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+        
+        .btn-back:hover {
+            transform: translateY(-2px);
+        }
+        
+        /* Custom styling for crispy forms */
+        .asteriskField {
+            display: none;
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .invalid-feedback {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-5">
+                <!-- Login Card -->
+                <div class="card login-card">
+                    <!-- Card Header -->
+                    <div class="login-header">
+                        <div class="brand-icon">
+                            <i class="fas fa-boxes"></i>
+                        </div>
+                        <h1 class="h3 text-primary fw-bold mb-2">Inventory Management System</h1>
+                        <p class="text-muted mb-0">Track inventory with efficiency and ease</p>
+                    </div>
+                    
+                    <!-- Card Body -->
+                    <div class="login-body">
+                        {% if user.is_authenticated %}
+                            <div class="text-center">
+                                <div class="mb-4">
+                                    <div class="avatar-circle mx-auto mb-3">
+                                        <i class="fas fa-user-check fa-2x text-success"></i>
+                                    </div>
+                                    <h3 class="fw-bold text-success mb-2">Welcome back!</h3>
+                                    <p class="text-muted">You are logged in as <strong>{{ request.user.username }}</strong></p>
+                                </div>
+                                <div class="d-grid gap-2">
+                                    <a class="btn btn-primary btn-login" href="{% url 'home' %}">
+                                        <i class="fas fa-home me-2"></i>Go to Dashboard
+                                    </a>
+                                    <a class="btn btn-outline-secondary btn-back" href="{% url 'logout' %}">
+                                        <i class="fas fa-sign-out-alt me-2"></i>Logout
+                                    </a>
+                                </div>
+                            </div>
+                        {% else %}
+                            <h2 class="h4 fw-bold text-center mb-4">Sign In to Your Account</h2>
+                            <form method="POST" id="loginForm">
+                                {% csrf_token %}
+                                <div class="mb-4">
+                                    <div class="login-alert d-none" id="loginAlert">
+                                        <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                            <i class="fas fa-exclamation-circle me-2"></i>
+                                            <div>Please check your username and password.</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    {{ form|crispy }}
+                                </div>
+                                <div class="form-group mt-4">
+                                    <button class="btn btn-primary w-100 btn-login" type="submit" id="loginButton">
+                                        <span id="loginText">Sign In</span>
+                                        <span id="loginSpinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </form>
+                            <div class="text-center mt-4">
+                                <p class="text-muted">
+                                    <i class="fas fa-user-shield text-muted me-1"></i>
+                                    Admin access required for this application
+                                </p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="text-center mt-4">
+                    <p class="small text-muted">
+                        &copy; {% now "Y" %} Inventory Management System. All rights reserved.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script src="{% static 'bootstrap/jquery-3.3.1.slim.min.js' %}"></script>
+    <script src="{% static 'bootstrap/popper.min.js' %}"></script>
+    <script src="{% static 'bootstrap/bootstrap.min.js' %}"></script>
+    
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loginForm = document.getElementById('loginForm');
+        const loginButton = document.getElementById('loginButton');
+        const loginText = document.getElementById('loginText');
+        const loginSpinner = document.getElementById('loginSpinner');
+        const loginAlert = document.getElementById('loginAlert');
+        
+        if (loginForm) {
+            // Add loading state to login button when form is submitted
+            loginForm.addEventListener('submit', function(e) {
+                loginButton.disabled = true;
+                loginText.classList.add('opacity-75');
+                loginSpinner.classList.remove('d-none');
+                
+                // If form has errors, they will be shown when the page reloads
+                // This is just for the loading effect
+            });
+            
+            // Check if there are any form errors and show the alert
+            const formErrors = document.querySelectorAll('.invalid-feedback');
+            if (formErrors.length > 0) {
+                loginAlert.classList.remove('d-none');
+            }
+            
+            // Focus the first input field
+            const firstInput = document.querySelector('.form-control');
+            if (firstInput) {
+                firstInput.focus();
+            }
+            
+            // Add input validation styling
+            const inputs = document.querySelectorAll('.form-control');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.parentElement.classList.add('focused');
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.parentElement.classList.remove('focused');
+                    if (this.value.trim() !== '') {
+                        this.classList.add('is-valid');
+                    } else {
+                        this.classList.remove('is-valid');
+                    }
+                });
+            });
+        }
+    });
+    </script>
+</body>
+
+</html>
