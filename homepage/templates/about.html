@@ -1,44 +1,163 @@
 {% extends "base.html" %}
+{% load static %}
 
-
-{% block title %} About {% endblock title %}
-
+{% block title %}About{% endblock title %}
 
 {% block content %}
-    
-    {% if not user.is_authenticated  %}
-        <br>
-        <a href="{% url 'home' %}" class="btn btn-secondary">Go Back</a>
-    {% endif %}    
-    
-    <div class="align-middle" style="color: #4caf50; font-style: bold; font-size: 3rem;">IMS</div>
-    <div class="align-middle" style="color: rgb(73, 73, 73)">An Inventory Management System</div>
-    <br><br>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
 
-    <div class="align-middle"> 
-        <h2 style="color:#4caf50">| About |</h3> <br>
-            <p>
-                IMS is a simple inventory management software created for the requirements of a company.
-                The software is capable of keeping track of incoming and outgoing stock with a dynamically rendered bill. 
-                Each supplier is provided with a profile where they can see the history of their transactions with the company.
-            </p>
-        <br>
-    </div>
-        <h2 style="color:#4caf50" class="align-middle">| Features |</h3> <br>
-            <ul style="display:table; margin:0 auto; ">                
-                <li style="color:#494949;">Interactive Chart to display current available stock</li>
-                <li style="color:#494949;">Stock details like current available stock are maintained</li>
-                <li style="color:#494949;">Incoming transactions are done through purchases</li>
-                <li style="color:#494949;">Outgoing transactions are done through sales</li>
-                <li style="color:#494949;">Every transaction performed through the software is recorded</li>
-                <li style="color:#494949;">Bill is dynamically rendered and can be printed</li>
-                <li style="color:#494949;">Separate profiles are maintained for suppliers</li>
-            </ul>  
-        <br>
-    <div class="align-middle">
-        <h2 style="color:#4caf50" >| Developer |</h3> <br>
-            <p>Akash Roshan</p>
-            <br><br><br>
+<div class="container-fluid px-4 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-6 fw-bold text-primary">
+            <i class="fas fa-info-circle me-2"></i>About AIVENTORY
+        </h1>
+        {% if not user.is_authenticated %}
+        <a href="{% url 'home' %}" class="btn btn-outline-secondary rounded-pill">
+            <i class="fas fa-arrow-left me-2"></i>Back to Home
+        </a>
+        {% endif %}
     </div>
 
+    <div class="row g-4">
+        <!-- Hero Section -->
+        <div class="col-12">
+            <div class="card border-0 shadow-lg animate__animated animate__fadeIn">
+                <div class="card-body p-5 text-center">
+                    <h2 class="display-4 fw-bold text-primary mb-3">AIVENTORY</h2>
+                    <p class="lead text-muted mb-4">An Intelligent Inventory Management System</p>
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+                            <p class="text-muted">
+                                AIVENTORY is a powerful inventory management software designed to streamline your business operations. 
+                                With real-time tracking, automated billing, and comprehensive reporting, we help you manage your inventory 
+                                with precision and ease.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Features Section -->
+        <div class="col-12">
+            <div class="card border-0 shadow-lg animate__animated animate__fadeIn" style="animation-delay: 0.2s;">
+                <div class="card-body p-5">
+                    <h3 class="h4 fw-bold text-primary mb-4">
+                        <i class="fas fa-star me-2"></i>Key Features
+                    </h3>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <div class="feature-item p-4 bg-light rounded-3 h-100">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="feature-icon bg-primary bg-opacity-10 p-3 rounded-3 me-3">
+                                        <i class="fas fa-chart-line text-primary"></i>
+                                    </div>
+                                    <h4 class="h5 mb-0">Real-time Analytics</h4>
+                                </div>
+                                <p class="text-muted mb-0">Interactive charts and graphs to visualize your inventory status and sales trends.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-item p-4 bg-light rounded-3 h-100">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="feature-icon bg-success bg-opacity-10 p-3 rounded-3 me-3">
+                                        <i class="fas fa-boxes text-success"></i>
+                                    </div>
+                                    <h4 class="h5 mb-0">Stock Management</h4>
+                                </div>
+                                <p class="text-muted mb-0">Efficiently track and manage your inventory with real-time stock updates.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-item p-4 bg-light rounded-3 h-100">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="feature-icon bg-info bg-opacity-10 p-3 rounded-3 me-3">
+                                        <i class="fas fa-file-invoice text-info"></i>
+                                    </div>
+                                    <h4 class="h5 mb-0">Dynamic Billing</h4>
+                                </div>
+                                <p class="text-muted mb-0">Generate professional bills with automatic calculations and customizable templates.</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="feature-item p-4 bg-light rounded-3 h-100">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="feature-icon bg-warning bg-opacity-10 p-3 rounded-3 me-3">
+                                        <i class="fas fa-history text-warning"></i>
+                                    </div>
+                                    <h4 class="h5 mb-0">Transaction History</h4>
+                                </div>
+                                <p class="text-muted mb-0">Comprehensive record of all transactions with detailed supplier profiles.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer Section -->
+        <div class="col-12">
+            <div class="card border-0 shadow-lg animate__animated animate__fadeIn" style="animation-delay: 0.4s;">
+                <div class="card-body p-5 text-center">
+                    <h3 class="h4 fw-bold text-primary mb-4">
+                        <i class="fas fa-code me-2"></i>Developer
+                    </h3>
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="developer-card p-4 bg-light rounded-3">
+                                <div class="developer-avatar mb-3">
+                                    <i class="fas fa-user-circle fa-4x text-primary"></i>
+                                </div>
+                                <h4 class="h5 mb-2">Philip, Darren, Maelyn, Angel, Roque</h4>
+                                <p class="text-muted mb-0">Team Avengers</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .feature-item {
+        transition: all 0.3s ease;
+    }
+    
+    .feature-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+    }
+    
+    .feature-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .developer-card {
+        transition: all 0.3s ease;
+    }
+    
+    .developer-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.1);
+    }
+    
+    .developer-avatar {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .animate__fadeIn {
+        animation-duration: 0.8s;
+    }
+</style>
 {% endblock content %}

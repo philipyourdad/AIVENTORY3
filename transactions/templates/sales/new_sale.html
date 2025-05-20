@@ -362,200 +362,146 @@
 </style>
 
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-    // Parse inventory data from Django
-    const stocks = JSON.parse('{{ stocks_json|escapejs }}');
-    const productItemsContainer = document.getElementById('productItems');
-    const productTemplate = document.getElementById('productTemplate').content;
-    const totalForms = document.getElementById('id_form-TOTAL_FORMS');
-    let formCount = parseInt(totalForms.value);
+document.addEventListener('DOMContentLoaded', function() {
+    // Get the stocks data from the context
+    const stocksData = {{ stocks_json|safe }};
     
-    // Apply form-control class to all form controls
-    document.querySelectorAll('#salesForm input, #salesForm select, #salesForm textarea').forEach(el => {
-        el.classList.add('form-control');
-    });
-    
-    // Apply form-select class to all selects
-    document.querySelectorAll('#salesForm select').forEach(el => {
-        el.classList.add('form-select');
-    });
-    
-    // Update product details when a product is selected
-    function updateProductDetails(productItem, productId) {
-        const stock = stocks[productId];
-        if (!stock) return;
+    // Function to update price when product is selected
+    window.updatePrice = function(selectElement) {
+        const productItem = selectElement.closest('.product-item');
+        const priceInput = productItem.querySelector('.unit-price');
+        const availableStockSpan = productItem.querySelector('.available-stock');
+        const quantityInput = productItem.querySelector('.quantity');
+        const perpriceInput = productItem.querySelector('input[name*="perprice"]');
         
+        const selectedStockId = selectElement.value;
+        if (selectedStockId && stocksData[selectedStockId]) {
+            const stock = stocksData[selectedStockId];
+            priceInput.value = stock.price.toFixed(2);
+            if (perpriceInput) {
+                perpriceInput.value = stock.price.toFixed(2);
+            }
+            availableStockSpan.textContent = stock.quantity;
+            quantityInput.max = stock.quantity;
+            
+            // Update total
+            updateItemTotal(productItem);
+        } else {
+            priceInput.value = '0.00';
+            if (perpriceInput) {
+                perpriceInput.value = '0.00';
+            }
+            availableStockSpan.textContent = '0';
+            quantityInput.max = '1';
+            updateItemTotal(productItem);
+        }
+    };
+    
+    // Function to update item total
+    function updateItemTotal(productItem) {
         const priceInput = productItem.querySelector('.unit-price');
         const quantityInput = productItem.querySelector('.quantity');
-        const availableStock = productItem.querySelector('.available-stock');
-        
-        // Set default price from product data
-        if (priceInput.value === '0.00') {
-            priceInput.value = parseFloat(stock.price).toFixed(2);
-        }
-        
-        availableStock.textContent = stock.quantity;
-        quantityInput.setAttribute('max', stock.quantity);
-        
-        // Update total
-        updateItemTotal(productItem);
-    }
-    
-    // Update item total when quantity or price changes
-    function updateItemTotal(productItem) {
-        const quantity = parseFloat(productItem.querySelector('.quantity').value) || 0;
-        const price = parseFloat(productItem.querySelector('.unit-price').value) || 0;
         const totalInput = productItem.querySelector('.item-total');
         
-        totalInput.value = (quantity * price).toFixed(2);
-        updateOrderSummary();
+        const price = parseFloat(priceInput.value) || 0;
+        const quantity = parseInt(quantityInput.value) || 0;
+        const total = price * quantity;
+        
+        totalInput.value = total.toFixed(2);
+        updateTotals();
     }
     
-    // Update order summary (subtotal, tax, total)
-    function updateOrderSummary() {
-        let subtotal = 0;
-        document.querySelectorAll('.item-total').forEach(input => {
-            subtotal += parseFloat(input.value) || 0;
-        });
+    // Function to update all totals
+    function updateTotals() {
+        const itemTotals = Array.from(document.querySelectorAll('.item-total'))
+            .map(input => parseFloat(input.value) || 0);
         
-        const tax = subtotal * 0.1; // 10% tax
-        const total = subtotal + tax;
+        const subtotal = itemTotals.reduce((sum, total) => sum + total, 0);
+        const tax = subtotal * 0.10; // 10% tax
+        const discount = 0; // You can add discount calculation here if needed
+        const total = subtotal + tax - discount;
         
-        document.getElementById('subtotal').textContent = `₱${subtotal.toFixed(2)}`;
-        document.getElementById('tax').textContent = `₱${tax.toFixed(2)}`;
-        document.getElementById('total').textContent = `₱${total.toFixed(2)}`;
+        document.getElementById('subtotal').textContent = '₱' + subtotal.toFixed(2);
+        document.getElementById('tax').textContent = '₱' + tax.toFixed(2);
+        document.getElementById('discount').textContent = '₱' + discount.toFixed(2);
+        document.getElementById('total').textContent = '₱' + total.toFixed(2);
     }
     
-    // Add new product item
-    document.querySelector('.add-item').addEventListener('click', function() {
-        const newProduct = productTemplate.cloneNode(true);
-        const newIndex = formCount++;
-        
-        // Update all names and IDs with the new index
-        newProduct.querySelectorAll('[name]').forEach(el => {
-            el.name = el.name.replace(/__prefix__/g, newIndex);
-            if (el.id) el.id = el.id.replace(/__prefix__/g, newIndex);
-        });
-        
-        // Update data-index
-        newProduct.querySelector('.product-item').dataset.index = newIndex;
-        
-        // Add to DOM
-        productItemsContainer.appendChild(newProduct);
-        
-        // Add form-control class to inputs and selects
-        newProduct.querySelectorAll('input, select').forEach(el => {
-            el.classList.add('form-control');
-        });
-        
-        // Add form-select class to selects
-        newProduct.querySelectorAll('select').forEach(el => {
-            el.classList.add('form-select');
-        });
-        
-        // Populate product select
-        const productSelect = newProduct.querySelector('.product-select');
-        Object.entries(stocks).forEach(([id, stock]) => {
-            const option = document.createElement('option');
-            option.value = id;
-            option.textContent = `${stock.name} (${stock.quantity} available)`;
-            productSelect.appendChild(option);
-        });
-        
-        // Add event listeners
-        productSelect.addEventListener('change', function() {
-            updateProductDetails(this.closest('.product-item'), this.value);
-        });
-        
-        const quantityInput = newProduct.querySelector('.quantity');
-        quantityInput.addEventListener('input', function() {
-            updateItemTotal(this.closest('.product-item'));
-        });
-        
-        const priceInput = newProduct.querySelector('.unit-price');
-        priceInput.addEventListener('input', function() {
-            updateItemTotal(this.closest('.product-item'));
-        });
-        
-        // Add remove event
-        newProduct.querySelector('.remove-item').addEventListener('click', function() {
-            const itemRow = this.closest('.product-item');
-            itemRow.classList.remove('animate__fadeIn');
-            itemRow.classList.add('animate__fadeOut');
-            
-            setTimeout(() => {
-                itemRow.remove();
-                totalForms.value = --formCount;
-                updateOrderSummary();
-            }, 500);
-        });
-        
-        // Update form count
-        totalForms.value = formCount;
-    });
-    
-    // Remove product item
-    document.addEventListener('click', function(e) {
-        if (e.target && e.target.classList.contains('remove-item')) {
-            e.preventDefault();
-            if (document.querySelectorAll('.product-item').length > 1) {
-                const itemRow = e.target.closest('.product-item');
-                itemRow.classList.remove('animate__fadeIn');
-                itemRow.classList.add('animate__fadeOut');
-                
-                setTimeout(() => {
-                    itemRow.remove();
-                    totalForms.value = --formCount;
-                    updateOrderSummary();
-                }, 500);
-            }
-        }
-    });
-    
-    // Initialize existing product selects
+    // Add event listeners to all product selects
     document.querySelectorAll('.product-select').forEach(select => {
-        // Populate options
-        Object.entries(stocks).forEach(([id, stock]) => {
-            const option = document.createElement('option');
-            option.value = id;
-            option.textContent = `${stock.name} (${stock.quantity} available)`;
-            select.appendChild(option);
-        });
-        
-        // Set change event
         select.addEventListener('change', function() {
-            updateProductDetails(this.closest('.product-item'), this.value);
+            updatePrice(this);
         });
-        
-        // Update details if product is already selected
-        if (select.value) {
-            updateProductDetails(select.closest('.product-item'), select.value);
-        }
     });
     
-    // Initialize quantity and price inputs
+    // Add event listeners to all quantity inputs
     document.querySelectorAll('.quantity').forEach(input => {
         input.addEventListener('input', function() {
             updateItemTotal(this.closest('.product-item'));
         });
     });
     
-    document.querySelectorAll('.unit-price').forEach(input => {
-        input.addEventListener('input', function() {
+    // Handle adding new product items
+    const addItemButton = document.querySelector('.add-item');
+    const productTemplate = document.getElementById('productTemplate');
+    const productItems = document.getElementById('productItems');
+    const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+    
+    addItemButton.addEventListener('click', function() {
+        const formCount = parseInt(totalForms.value);
+        const newForm = productTemplate.content.cloneNode(true);
+        
+        // Update all the names and IDs in the new form
+        newForm.querySelectorAll('[name*="__prefix__"]').forEach(element => {
+            element.name = element.name.replace('__prefix__', formCount);
+        });
+        newForm.querySelectorAll('[id*="__prefix__"]').forEach(element => {
+            element.id = element.id.replace('__prefix__', formCount);
+        });
+        
+        // Add the new form to the container
+        productItems.appendChild(newForm);
+        
+        // Update the total forms count
+        totalForms.value = formCount + 1;
+        
+        // Add event listeners to the new form
+        const newSelect = productItems.lastElementChild.querySelector('.product-select');
+        const newQuantity = productItems.lastElementChild.querySelector('.quantity');
+        
+        newSelect.addEventListener('change', function() {
+            updatePrice(this);
+        });
+        
+        newQuantity.addEventListener('input', function() {
             updateItemTotal(this.closest('.product-item'));
+        });
+        
+        // Populate the select options
+        const select = productItems.lastElementChild.querySelector('.product-select');
+        Object.entries(stocksData).forEach(([id, data]) => {
+            const option = document.createElement('option');
+            option.value = id;
+            option.textContent = data.name;
+            select.appendChild(option);
         });
     });
     
-    // Add loading spinner to submit button
-    document.querySelector('#salesForm').addEventListener('submit', function() {
-        const btn = document.querySelector('.btn-submit-sale');
-        btn.querySelector('.btn-loader').classList.remove('d-none');
-        btn.querySelector('.btn-text').classList.add('opacity-0');
-        btn.disabled = true;
+    // Handle removing product items
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-item')) {
+            const productItem = e.target.closest('.product-item');
+            productItem.remove();
+            updateTotals();
+        }
     });
     
-    // Initial summary update
-    updateOrderSummary();
+    // Initialize prices and totals for existing items
+    document.querySelectorAll('.product-select').forEach(select => {
+        if (select.value) {
+            updatePrice(select);
+        }
+    });
 });
 </script>
 {% endblock %}

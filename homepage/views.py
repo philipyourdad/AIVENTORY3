@@ -1,12 +1,15 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.views.generic import View, TemplateView
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 from django.utils.decorators import method_decorator
 from django.db.models import Sum, Count, F, FloatField, ExpressionWrapper
 from django.db.models.functions import Coalesce
+import json
+from django.contrib import messages
 
 from inventory.models import Stock
 from transactions.models import SaleBill, PurchaseBill, SaleItem, Supplier
+from .forms import SuperUserRegistrationForm
 
 
 # Use login_required for class-based views
@@ -64,6 +67,8 @@ class HomeView(View):
         context = {
             'labels': labels,
             'data': data,
+            'labels_json': json.dumps(labels),
+            'data_json': json.dumps(data),
             'sales': sales,
             'purchases': purchases,
             'supplier_count': supplier_count,
@@ -76,3 +81,19 @@ class HomeView(View):
 @method_decorator(login_required, name='dispatch')
 class AboutView(TemplateView):
     template_name = "about.html"
+
+
+def register_superuser(request):
+    if request.method == 'POST':
+        form = SuperUserRegistrationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.set_password(form.cleaned_data['password'])
+            user.is_superuser = form.cleaned_data['is_superuser']
+            user.is_staff = form.cleaned_data['is_staff']
+            user.save()
+            messages.success(request, 'Account created successfully! You can now log in.')
+            return redirect('login')
+    else:
+        form = SuperUserRegistrationForm()
+    return render(request, 'registration/register.html', {'form': form})

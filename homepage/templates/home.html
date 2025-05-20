@@ -209,7 +209,15 @@
           </div>
         </div>
         <div class="card-body">
-          <canvas id="inventory-chart" height="250"></canvas>
+          {% if labels and data %}
+            <canvas id="inventory-chart" height="250"></canvas>
+          {% else %}
+            <div class="text-center py-5">
+              <i class="bi bi-bar-chart-line fs-1 text-muted"></i>
+              <p class="text-muted mb-0 mt-3">No inventory data available</p>
+              <a href="{% url 'new-stock' %}" class="btn btn-sm btn-primary mt-3">Add Stock</a>
+            </div>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -312,7 +320,7 @@
 <!--end::Dashboard Container-->
 
 <!-- JavaScript for Interactive Features -->
-<script src="{% static 'js/Chart.min.js' %}"></script>  
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     // Animate cards on page load
@@ -396,34 +404,28 @@
     // Inventory Chart
     const inventoryChart = document.getElementById('inventory-chart');
     if (inventoryChart) {
-      // Apply chart defaults
-      Chart.defaults.global.defaultFontFamily = 'Source Sans 3, sans-serif';
-      Chart.defaults.global.defaultFontColor = '#6c757d';
-      
-      // Get data from Django context
-      const labels = JSON.parse('{{ labels|escapejs }}');
-      const data = JSON.parse('{{ data|escapejs }}');
-      
-      // Only show top 5 items for better visibility
-      const displayLabels = labels.slice(0, 5);
-      const displayData = data.slice(0, 5);
-      
-      // Generate random colors for the chart
-      const backgroundColors = displayLabels.map(() => {
-        const r = Math.floor(Math.random() * 200);
-        const g = Math.floor(Math.random() * 200);
-        const b = Math.floor(Math.random() * 200);
-        return `rgba(${r}, ${g}, ${b}, 0.7)`;
-      });
-      
+      // Use window variables for safe data passing
+      const labels = window.dashboardLabels;
+      const data = window.dashboardData;
+
+      // Only show top 7 items for better visibility
+      const displayLabels = labels.slice(0, 7);
+      const displayData = data.slice(0, 7);
+
+      // Modern color palette
+      const backgroundColors = [
+        '#4e79a7', '#f28e2b', '#e15759', '#76b7b2', '#59a14f', '#edc949', '#af7aa1', '#ff9da7', '#9c755f', '#bab0ab'
+      ];
+
       new Chart(inventoryChart, {
         type: 'doughnut',
         data: {
           labels: displayLabels,
           datasets: [{
             data: displayData,
-            backgroundColor: backgroundColors,
-            borderWidth: 1
+            backgroundColor: backgroundColors.slice(0, displayLabels.length),
+            borderWidth: 2,
+            hoverBorderColor: '#222',
           }]
         },
         options: {
@@ -432,7 +434,9 @@
           legend: {
             position: 'right',
             labels: {
-              boxWidth: 12
+              boxWidth: 16,
+              fontSize: 14,
+              padding: 20
             }
           },
           animation: {
@@ -440,15 +444,21 @@
             animateRotate: true
           },
           tooltips: {
+            enabled: true,
             callbacks: {
               label: function(tooltipItem, data) {
                 const dataset = data.datasets[tooltipItem.datasetIndex];
-                const total = dataset.data.reduce((previousValue, currentValue) => previousValue + currentValue);
+                const total = dataset.data.reduce((prev, curr) => prev + curr, 0);
                 const currentValue = dataset.data[tooltipItem.index];
                 const percentage = Math.floor(((currentValue/total) * 100) + 0.5);
-                
-                return `${data.labels[tooltipItem.index]}: ${currentValue} (${percentage}%)`;
+                return `${data.labels[tooltipItem.index]}: ${currentValue} units (${percentage}%)`;
               }
+            }
+          },
+          hover: {
+            onHover: function(e) {
+              const point = this.getElementAtEvent(e);
+              e.target.style.cursor = point.length ? 'pointer' : 'default';
             }
           }
         }

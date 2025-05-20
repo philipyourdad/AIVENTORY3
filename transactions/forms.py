@@ -73,6 +73,7 @@ class SaleForm(forms.ModelForm):
         self.fields['phone'].widget.attrs.update({'class': 'textinput form-control', 'maxlength': '10', 'pattern' : '[0-9]{10}', 'title' : 'Numbers only', 'required': 'true'})
         self.fields['email'].widget.attrs.update({'class': 'textinput form-control'})
         self.fields['gstin'].widget.attrs.update({'class': 'textinput form-control', 'maxlength': '15', 'pattern' : '[A-Z0-9]{15}', 'title' : 'GSTIN Format Required'})
+        self.fields['gstin'].required = False  # Make GSTIN optional
     class Meta:
         model = SaleBill
         fields = ['name', 'phone', 'address', 'email', 'gstin']
@@ -90,9 +91,48 @@ class SaleItemForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['stock'].queryset = Stock.objects.filter(is_deleted=False)
-        self.fields['stock'].widget.attrs.update({'class': 'textinput form-control setprice stock', 'required': 'true'})
-        self.fields['quantity'].widget.attrs.update({'class': 'textinput form-control setprice quantity', 'min': '0', 'required': 'true'})
-        self.fields['perprice'].widget.attrs.update({'class': 'textinput form-control setprice price', 'min': '0', 'required': 'true'})
+        self.fields['stock'].widget.attrs.update({
+            'class': 'textinput form-control setprice stock product-select',
+            'required': 'true'
+        })
+        self.fields['quantity'].widget.attrs.update({
+            'class': 'textinput form-control setprice quantity',
+            'min': '1',
+            'required': 'true'
+        })
+        self.fields['perprice'].widget.attrs.update({
+            'class': 'textinput form-control setprice price unit-price',
+            'min': '0',
+            'required': 'true',
+            'readonly': 'true'  # Make price field readonly since it's auto-populated
+        })
+
+    def clean(self):
+        cleaned_data = super().clean()
+        stock = cleaned_data.get('stock')
+        quantity = cleaned_data.get('quantity')
+        
+        if stock and quantity:
+            # Set the price from the stock
+            cleaned_data['perprice'] = stock.price
+            # Calculate total price
+            cleaned_data['totalprice'] = stock.price * quantity
+            
+            # Set the price in the form data
+            self.data = self.data.copy()
+            self.data[f'{self.prefix}-perprice'] = str(stock.price)
+            
+        return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        if instance.stock:
+            instance.perprice = instance.stock.price
+            instance.totalprice = instance.perprice * instance.quantity
+        if commit:
+            instance.save()
+        return instance
+
     class Meta:
         model = SaleItem
         fields = ['stock', 'quantity', 'perprice']

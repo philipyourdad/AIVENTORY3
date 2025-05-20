@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.forms import modelformset_factory
 from django.core.serializers.json import DjangoJSONEncoder
+from django.db import transaction
 import json
 from django.core import serializers
 from django.core import serializers
@@ -149,9 +150,17 @@ class PurchaseCreateView(View):
     def get(self, request, pk):
         formset = PurchaseItemFormset(request.GET or None)                      # renders an empty formset
         supplierobj = get_object_or_404(Supplier, pk=pk)                        # gets the supplier object
+        stocks = Stock.objects.filter(is_deleted=False)
+        stocks_dict = {
+            str(stock.id): {
+                "name": stock.name,
+                "price": float(stock.price)
+            } for stock in stocks
+        }
         context = {
             'formset'   : formset,
             'supplier'  : supplierobj,
+            'stocks_json': json.dumps(stocks_dict)
         }                                                                       # sends the supplier and formset as context
         return render(request, self.template_name, context)
 
@@ -229,6 +238,7 @@ class SaleCreateView(View):
         # Prepare stock data for JavaScript
         stocks_dict = {
             str(stock.id): {
+                "name": stock.name,
                 "quantity": stock.quantity,
                 "price": float(stock.price)
             } for stock in stocks
@@ -244,34 +254,70 @@ class SaleCreateView(View):
 
     def post(self, request):
         form = SaleForm(request.POST)
-        formset = SaleItemFormset(request.POST)                                 # recieves a post method for the formset
+        formset = SaleItemFormset(request.POST)
+        
         if form.is_valid() and formset.is_valid():
-            # saves bill
-            billobj = form.save(commit=False)
-            billobj.save()     
-            # create bill details object
-            billdetailsobj = SaleBillDetails(billno=billobj)
-            billdetailsobj.save()
-            for form in formset:                                                # for loop to save each individual form as its own object
-                # false saves the item and links bill to the item
-                billitem = form.save(commit=False)
-                billitem.billno = billobj                                       # links the bill object to the items
-                # gets the stock item
-                stock = get_object_or_404(Stock, name=billitem.stock.name)      
-                # calculates the total price
-                billitem.totalprice = billitem.perprice * billitem.quantity
-                # updates quantity in stock db
-                stock.quantity -= billitem.quantity   
-                # saves bill item and stock
-                stock.save()
-                billitem.save()
-            messages.success(request, "Sold items have been registered successfully")
-            return redirect('sale-bill', billno=billobj.billno)
-        form = SaleForm(request.GET or None)
-        formset = SaleItemFormset(request.GET or None)
+            try:
+                with transaction.atomic():
+                    # Save the sale bill
+                    billobj = form.save()
+                    
+                    # Create bill details object
+                    billdetailsobj = SaleBillDetails(billno=billobj)
+                    
+                    # Calculate total price
+                    total_price = 0
+                    for form in formset:
+                        if form.cleaned_data and not form.cleaned_data.get('DELETE', False):
+                            billitem = form.save(commit=False)
+                            billitem.billno = billobj
+                            
+                            # Get the stock item
+                            stock = get_object_or_404(Stock, id=billitem.stock.id)
+                            
+                            # Set the price from the stock
+                            billitem.perprice = stock.price
+                            
+                            # Calculate total price for this item
+                            billitem.totalprice = billitem.perprice * billitem.quantity
+                            total_price += billitem.totalprice
+                            
+                            # Update stock quantity
+                            stock.quantity -= billitem.quantity
+                            stock.save()
+                            
+                            # Save the sale item
+                            billitem.save()
+                    
+                    # Save the total price in bill details
+                    billdetailsobj.total = str(total_price)
+                    billdetailsobj.save()
+                    
+                    messages.success(request, "Sale has been registered successfully")
+                    return redirect('sale-bill', billno=billobj.billno)
+            except Exception as e:
+                messages.error(request, f"Error creating sale: {str(e)}")
+        else:
+            # If form is not valid, show errors
+            for field, errors in form.errors.items():
+                for error in errors:
+                    messages.error(request, f"{field}: {error}")
+            for form in formset:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"Item {form.prefix} - {field}: {error}")
+        
         context = {
-            'form'      : form,
-            'formset'   : formset,
+            'form': form,
+            'formset': formset,
+            'stocks': Stock.objects.filter(is_deleted=False),
+            'stocks_json': json.dumps({
+                str(stock.id): {
+                    "name": stock.name,
+                    "quantity": stock.quantity,
+                    "price": float(stock.price)
+                } for stock in Stock.objects.filter(is_deleted=False)
+            }, cls=DjangoJSONEncoder)
         }
         return render(request, self.template_name, context)
 
@@ -344,24 +390,12 @@ class SaleBillView(View):
     template_name = "bill/sale_bill.html"
     bill_base = "bill/bill_base.html"
     
-    def get(self, request):
-        form = SaleForm(request.GET or None)
-        formset = SaleItemFormset(request.GET or None)
-        stocks = Stock.objects.filter(is_deleted=False)
-
-        stocks_dict = {
-            str(stock.id): {
-                "id": stock.id,
-                "name": stock.name,
-                "quantity": stock.quantity,
-                "price": float(stock.price)
-            } for stock in stocks
-        }
-
+    def get(self, request, billno):
         context = {
-            'form': form,
-            'formset': formset,
-            'stocks_json': json.dumps(stocks_dict, cls=DjangoJSONEncoder)
+            'bill'          : SaleBill.objects.get(billno=billno),
+            'items'         : SaleItem.objects.filter(billno=billno),
+            'billdetails'   : SaleBillDetails.objects.get(billno=billno),
+            'bill_base'     : self.bill_base,
         }
         return render(request, self.template_name, context)
 
